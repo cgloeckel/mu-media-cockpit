@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MU Media Cockpit · AT CH SI</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="%23e43024"/><path d="M7 20 L13 10 L16 16 L21 9 L25 17" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
+<meta name="description" content="Prototyp eines Media-Cockpits für die Management Unit Österreich, Schweiz, Slowenien. Alle Werte sind Dummy-Daten.">
+<style>
+/* ============================================================
+   MU MEDIA COCKPIT · Design-Tokens
+   Markenrot aus dem Intersnack/Kelly-Umfeld, Chartfarben
+   validiert (CVD-Checks bestanden; Kontrast-Relief über
+   sichtbare Labels + Tabellenansichten).
+   ============================================================ */
+:root {
+  --page:        #f7f4ef;   /* warmes Papier, Snack-Regal statt Klinik */
+  --surface:     #fdfcfa;   /* Kartenfläche */
+  --ink:         #1d1a17;
+  --ink-2:       #6a645d;
+  --ink-3:       #9b948b;
+  --hairline:    #e8e3db;
+  --grid:        #ece8e1;
+
+  --brand:       #e43024;   /* Markenrot, gesampelt aus dem Kelly-Auftritt */
+  --brand-deep:  #b81f16;
+  --brand-wash:  #fcece9;
+
+  --s-red:       #e43024;   /* Serie 1 · AT  */
+  --s-blue:      #2a78d6;   /* Serie 2 · CH  */
+  --s-gold:      #eda100;   /* Serie 3 · SI  */
+  --s-aqua:      #1baf7a;   /* Serie 4 */
+  --s-violet:    #6250d6;   /* Serie 5 */
+  --s-magenta:   #e87ba4;   /* Serie 6 */
+  --de-emph:     #c9c3ba;
+
+  --good:        #0ca30c;
+  --good-text:   #006300;
+  --warn:        #c98500;
+  --crit:        #d03b3b;
+
+  --radius:      14px;
+  --radius-s:    8px;
+  --shadow:      0 1px 2px rgba(29,26,23,.05), 0 8px 28px -12px rgba(29,26,23,.14);
+  --font:        system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--page);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Kopfzeile ---------- */
+header {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in srgb, var(--page) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--hairline);
+}
+.bar {
+  max-width: 1240px; margin: 0 auto; padding: 14px 24px;
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+}
+.wordmark { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.wordmark .dot {
+  width: 13px; height: 13px; border-radius: 4px; background: var(--brand);
+  align-self: center; flex: none;
+  box-shadow: 0 0 0 4px var(--brand-wash);
+  animation: hello 1.1s cubic-bezier(.3,.9,.3,1) .2s backwards;
+}
+@keyframes hello {
+  0% { box-shadow: 0 0 0 0 rgba(228,48,36,.45); }
+  70% { box-shadow: 0 0 0 11px rgba(228,48,36,0); }
+  100% { box-shadow: 0 0 0 4px var(--brand-wash); }
+}
+.wordmark h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.wordmark span { font-size: 13px; color: var(--ink-2); }
+
+.badge {
+  font-size: 12px; font-weight: 600; color: var(--brand-deep);
+  background: var(--brand-wash); border: 1px solid #f3c9c4;
+  padding: 4px 10px; border-radius: 99px; white-space: nowrap;
+}
+
+/* Marktwahl + Ansichten */
+.seg {
+  display: flex; position: relative; background: #eeeae3;
+  border-radius: 11px; padding: 3px; gap: 2px;
+}
+.seg button {
+  font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink-2);
+  background: none; border: 0; border-radius: 9px; padding: 6px 14px;
+  cursor: pointer; position: relative; z-index: 1;
+  transition: color .22s;
+}
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { color: var(--ink); }
+.seg .thumb {
+  position: absolute; top: 3px; bottom: 3px; border-radius: 9px;
+  background: var(--surface); box-shadow: 0 1px 4px rgba(29,26,23,.14);
+  transition: left .28s cubic-bezier(.3,.9,.3,1), width .28s cubic-bezier(.3,.9,.3,1);
+}
+.seg.views button[aria-pressed="true"] { color: var(--brand-deep); }
+
+kbd {
+  font: 600 10.5px/1 var(--font); color: var(--ink-3);
+  border: 1px solid var(--hairline); border-bottom-width: 2px;
+  border-radius: 4px; padding: 1.5px 4.5px; margin-left: 7px;
+  background: var(--surface); vertical-align: 1px;
+}
+.seg button[aria-pressed="true"] kbd { color: var(--ink-3); }
+
+/* ---------- Layout ---------- */
+main { max-width: 1240px; margin: 0 auto; padding: 26px 24px 64px; }
+
+.view { display: none; }
+.view.active { display: block; animation: viewIn .45s cubic-bezier(.25,.8,.3,1) both; }
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.view-head { margin: 6px 2px 20px; }
+.view-head .eyebrow { font-size: 12.5px; font-weight: 700; color: var(--brand-deep); margin-bottom: 1px; }
+.view-head .row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.view-head h2 { font-size: 23px; font-weight: 750; letter-spacing: -0.015em; }
+.view-head p  { color: var(--ink-2); font-size: 14.5px; }
+
+/* Hero-Band: große Zahl, kleine Beschriftung, weißes Icon auf Markenfläche */
+.hero {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  background: linear-gradient(118deg, #a81b12, #d42a1e 48%, #ef4b33);
+  color: #fff; border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px;
+  box-shadow: 0 14px 34px -14px rgba(184,31,22,.5);
+  position: relative; overflow: hidden;
+}
+.hero .spark { flex: none; }
+.hero .hv { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
+.hero .hv small { font-size: 19px; font-weight: 700; opacity: .9; margin-left: 2px; }
+.hero .hl { font-size: 11.5px; font-weight: 600; opacity: .85; margin-top: 5px; }
+.hero .ht { font-size: 14.5px; font-weight: 500; line-height: 1.55; max-width: 58ch; }
+.hero .ht b { font-weight: 750; }
+.hero .wm {
+  position: absolute; right: -24px; bottom: -34px; opacity: .1; pointer-events: none;
+}
+@media (max-width: 640px) { .hero .hv { font-size: 36px; } .hero .wm { display: none; } }
+
+.grid { display: grid; gap: 16px; }
+.cols-5 { grid-template-columns: repeat(5, 1fr); }
+.cols-2 { grid-template-columns: 1.25fr .75fr; }
+.cols-2e { grid-template-columns: 1fr 1fr; }
+@media (max-width: 1080px) { .cols-5 { grid-template-columns: repeat(3, 1fr); } .cols-2, .cols-2e { grid-template-columns: 1fr; } }
+@media (max-width: 640px)  { .cols-5 { grid-template-columns: repeat(2, 1fr); } .bar { padding: 12px 16px; } main { padding: 20px 16px 56px; } }
+@media (max-width: 480px)  { .tile svg.spark { display: none; } }
+
+.card {
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 18px 20px;
+}
+.card h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 2px; }
+.card .sub { font-size: 13px; color: var(--ink-2); margin-bottom: 14px; }
+
+/* ---------- KPI-Kacheln ---------- */
+.tile { padding: 16px 18px 14px; position: relative; overflow: hidden; }
+.tile .label { font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.tile .value { font-size: 31px; font-weight: 750; letter-spacing: -0.02em; margin: 2px 0 0; }
+.tile .value small { font-size: 16px; font-weight: 650; color: var(--ink-2); margin-left: 1px; }
+.tile .delta { font-size: 12.5px; font-weight: 650; margin-top: 2px; display: inline-flex; align-items: center; gap: 4px; }
+.tile .delta.up   { color: var(--good-text); }
+.tile .delta.down { color: var(--crit); }
+.tile .delta .vs  { color: var(--ink-3); font-weight: 500; }
+.tile svg.spark { position: absolute; right: 12px; bottom: 10px; opacity: .9; }
+.tile .foot { font-size: 11.5px; color: var(--ink-3); margin-top: 8px; }
+
+/* ---------- Charts allgemein ---------- */
+.chart-wrap { position: relative; }
+svg text { font-family: var(--font); }
+.axis-label { font-size: 11px; fill: var(--ink-3); }
+.tick-label { font-size: 11px; fill: var(--ink-3); }
+.bar-label  { font-size: 11.5px; font-weight: 600; fill: var(--ink-2); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-size: 12.5px; color: var(--ink-2); }
+.legend .key { display: inline-flex; align-items: center; gap: 6px; }
+.legend .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.legend .line-key { width: 14px; height: 3px; border-radius: 2px; flex: none; }
+.legend b { color: var(--ink); font-weight: 650; }
+
+details.tbl { margin-top: 12px; border-top: 1px solid var(--hairline); padding-top: 10px; }
+details.tbl summary { font-size: 12.5px; color: var(--ink-2); cursor: pointer; font-weight: 600; }
+details.tbl summary:hover { color: var(--ink); }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 13px; }
+th { text-align: left; font-weight: 650; color: var(--ink-2); font-size: 12px; border-bottom: 1px solid var(--hairline); padding: 6px 10px 6px 0; }
+td { border-bottom: 1px solid var(--grid); padding: 7px 10px 7px 0; font-variant-numeric: tabular-nums; }
+td:first-child, th:first-child { padding-left: 0; }
+tr:last-child td { border-bottom: 0; }
+.num { text-align: right; }
+th.num { text-align: right; }
+
+/* Tooltip */
+#tip {
+  position: fixed; z-index: 99; pointer-events: none;
+  background: var(--ink); color: #fff; border-radius: 9px;
+  padding: 9px 12px; font-size: 12.5px; line-height: 1.5;
+  box-shadow: 0 6px 24px rgba(0,0,0,.25);
+  opacity: 0; transform: translateY(4px); transition: opacity .14s, transform .14s;
+  max-width: 260px;
+}
+#tip.show { opacity: 1; transform: none; }
+#tip .t-title { font-weight: 700; margin-bottom: 3px; }
+#tip .t-row { display: flex; justify-content: space-between; gap: 16px; }
+#tip .t-row b { font-weight: 700; }
+#tip .t-row span { color: #cfc9c2; }
+#tip .t-key { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: 3px; }
+
+/* ---------- Ansicht 2: Messen ---------- */
+.pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.pills button {
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--hairline); background: var(--surface); color: var(--ink-2);
+  border-radius: 99px; padding: 6px 14px; transition: all .18s;
+}
+.pills button:hover { border-color: var(--ink-3); color: var(--ink); }
+.pills button[aria-pressed="true"] {
+  background: var(--ink); border-color: var(--ink); color: #fff;
+}
+.lvl { display: inline-block; font-size: 10.5px; font-weight: 700; border-radius: 5px; padding: 2px 6px; margin-right: 6px; }
+.lvl-1 { background: #e9f1fb; color: #1c5cab; }
+.lvl-2 { background: #fdf3e0; color: #8a5c00; }
+.lvl-3 { background: #e7f6ee; color: #0e6b4a; }
+
+/* ---------- Ansicht 3: Verbessern ---------- */
+.mix-row { display: grid; grid-template-columns: 118px 1fr 86px; gap: 12px; align-items: center; padding: 7px 0; }
+.mix-row .name { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.mix-row .name .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.mix-row output { font-size: 13.5px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.mix-row output small { color: var(--ink-3); font-weight: 500; }
+.sat { font-size: 10.5px; font-weight: 700; color: var(--warn); margin-left: 6px; }
+
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; background: none; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--track, #eeeae3); }
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--surface); border: 2.5px solid var(--thumb, var(--brand));
+  margin-top: -6px; box-shadow: 0 1px 4px rgba(29,26,23,.2); transition: transform .12s;
+}
+input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.12); }
+input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--track, #eeeae3); }
+input[type="range"]::-moz-range-thumb {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--surface); border: 2.5px solid var(--thumb, var(--brand));
+  box-shadow: 0 1px 4px rgba(29,26,23,.2);
+}
+
+.readout { display: flex; gap: 26px; flex-wrap: wrap; padding: 14px 0 4px; }
+.readout .r { min-width: 120px; }
+.readout .r .rl { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+.readout .r .rv { font-size: 24px; font-weight: 750; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.readout .r .rv .chg { font-size: 13px; font-weight: 650; margin-left: 5px; }
+.chg.up { color: var(--good-text); } .chg.down { color: var(--crit); } .chg.flat { color: var(--ink-3); }
+
+.btn-ghost {
+  font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  color: var(--ink-2); background: none; border: 1px solid var(--hairline);
+  border-radius: 8px; padding: 5px 12px; transition: all .15s;
+}
+.btn-ghost:hover { color: var(--brand-deep); border-color: #f3c9c4; background: var(--brand-wash); }
+
+.test-item { border-top: 1px solid var(--grid); padding: 11px 0; }
+.test-item:first-of-type { border-top: 0; }
+.test-item summary { cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 600; list-style: none; }
+.test-item summary::-webkit-details-marker { display: none; }
+.test-item summary .chev { transition: transform .2s; color: var(--ink-3); flex: none; }
+.test-item[open] summary .chev { transform: rotate(90deg); }
+.test-item .st { margin-left: auto; font-size: 11px; font-weight: 700; border-radius: 99px; padding: 3px 9px; white-space: nowrap; }
+.st-done { background: #e7f6ee; color: #0e6b4a; }
+.st-run  { background: #e9f1fb; color: #1c5cab; }
+.st-plan { background: #f0ece5; color: var(--ink-2); }
+.test-item .body { font-size: 13px; color: var(--ink-2); padding: 9px 0 3px 24px; line-height: 1.55; }
+.test-item .body b { color: var(--ink); }
+
+/* ---------- Ansicht 4: Scorecard ---------- */
+.timeline { position: relative; margin: 26px 8px 30px; }
+.timeline .rail { position: absolute; left: 0; right: 0; top: 10px; height: 3px; background: var(--hairline); border-radius: 2px; }
+.timeline .rail-fill { position: absolute; left: 0; top: 10px; height: 3px; background: var(--brand); border-radius: 2px; transition: width .5s cubic-bezier(.3,.9,.3,1); }
+.timeline ol { list-style: none; display: flex; justify-content: space-between; position: relative; }
+.timeline button {
+  font: inherit; background: none; border: 0; cursor: pointer; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 9px; color: var(--ink-2);
+}
+.timeline .knot {
+  width: 23px; height: 23px; border-radius: 50%; background: var(--surface);
+  border: 3px solid var(--de-emph); transition: all .25s; flex: none;
+}
+.timeline button:hover .knot { border-color: var(--ink-3); transform: scale(1.1); }
+.timeline button[aria-pressed="true"] .knot { border-color: var(--brand); background: var(--brand); box-shadow: 0 0 0 5px var(--brand-wash); }
+.timeline .t-label { font-size: 13px; font-weight: 700; color: var(--ink); }
+.timeline .t-sub { font-size: 11.5px; color: var(--ink-3); margin-top: -6px; }
+
+.milestone-panel { min-height: 150px; }
+.milestone-panel h4 { font-size: 16px; font-weight: 750; margin-bottom: 10px; }
+.milestone-panel h4 span { color: var(--brand-deep); }
+.milestone-panel ul { list-style: none; }
+.milestone-panel li { padding: 6px 0 6px 26px; position: relative; font-size: 14px; }
+.milestone-panel li::before {
+  content: ""; position: absolute; left: 4px; top: 12px; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--brand);
+}
+
+.score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .score-grid { grid-template-columns: 1fr; } }
+.score-field { border: 1px solid var(--hairline); border-radius: var(--radius-s); padding: 14px 16px; background: #fffefc; }
+.score-field h4 { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.score-field h4 .swatch { width: 10px; height: 10px; border-radius: 3px; }
+.score-field dl { font-size: 13px; }
+.score-field .kv { display: flex; justify-content: space-between; gap: 12px; padding: 4.5px 0; border-top: 1px solid var(--grid); }
+.score-field .kv:first-of-type { border-top: 0; }
+.score-field dt { color: var(--ink-2); }
+.score-field dd { font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---------- Fußzeile ---------- */
+footer { border-top: 1px solid var(--hairline); padding: 20px 24px 34px; }
+footer .bar { padding: 0; font-size: 12.5px; color: var(--ink-3); }
+footer kbd { margin-left: 4px; }
+
+:focus-visible { outline: 2.5px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+
+/* Chart-Einstiegsanimationen (keyframe-basiert, kein rAF-Race) */
+.grow { animation: growX .55s cubic-bezier(.3,.9,.3,1) backwards; }
+@keyframes growX { from { transform: scaleX(0); } }
+.pop { animation: popIn .45s cubic-bezier(.3,1.4,.4,1) backwards; }
+@keyframes popIn { from { transform: scale(0); } }
+.draw { stroke-dasharray: 900; animation: dash 1.1s cubic-bezier(.4,.6,.3,1) forwards; }
+@keyframes dash { from { stroke-dashoffset: 900; } to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="wordmark">
+      <div class="dot" aria-hidden="true"></div>
+      <h1>MU Media Cockpit</h1>
+      <span>Österreich · Schweiz · Slowenien</span>
+    </div>
+    <div class="seg" id="marketSeg" role="group" aria-label="Markt wählen">
+      <div class="thumb" aria-hidden="true"></div>
+      <button data-market="MU" aria-pressed="true">MU gesamt</button>
+      <button data-market="AT" aria-pressed="false">Österreich</button>
+      <button data-market="CH" aria-pressed="false">Schweiz</button>
+      <button data-market="SI" aria-pressed="false">Slowenien</button>
+    </div>
+    <span class="badge">Prototyp · alle Werte sind Dummy-Daten</span>
+  </div>
+  <div class="bar" style="padding-top:0">
+    <nav class="seg views" id="viewSeg" aria-label="Ansicht wählen">
+      <div class="thumb" aria-hidden="true"></div>
+      <button data-view="v1" aria-pressed="true">Überblick<kbd>1</kbd></button>
+      <button data-view="v2" aria-pressed="false">Messen<kbd>2</kbd></button>
+      <button data-view="v3" aria-pressed="false">Verbessern<kbd>3</kbd></button>
+      <button data-view="v4" aria-pressed="false">Scorecard<kbd>4</kbd></button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ Ansicht 1 · Überblick ============ -->
+  <section class="view active" id="v1" aria-label="Überblick">
+    <div class="view-head">
+      <div class="eyebrow">Management Unit Österreich · Schweiz · Slowenien</div>
+      <div class="row">
+        <h2 id="v1-title">Überblick</h2>
+        <p>Vergleichbar, aber nicht gleichgemacht: eine Messsprache, drei Zielniveaus.</p>
+      </div>
+    </div>
+
+    <div class="hero" id="heroBand">
+      <svg class="spark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <path d="M4 22 L12 7 L15 15 L21 5 L26 17" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <div class="hv" id="heroVal">–</div>
+        <div class="hl" id="heroLabel">–</div>
+      </div>
+      <div class="ht" id="heroTxt">–</div>
+      <svg class="wm" width="190" height="150" viewBox="0 0 30 24" aria-hidden="true">
+        <path d="M3 20 L11 6 L14 13 L20 4 L25 15" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="grid cols-5" id="kpiRow"></div>
+
+    <div class="grid cols-2" style="margin-top:16px">
+      <div class="card">
+        <h3>Budgetverteilung nach Kanal</h3>
+        <p class="sub" id="mixSub">Anteil am Media-Budget, laufendes Planjahr</p>
+        <div class="chart-wrap" id="mixBar"></div>
+        <div class="legend" id="mixLegend"></div>
+        <details class="tbl"><summary>Werte als Tabelle</summary><div id="mixTable"></div></details>
+      </div>
+      <div class="card">
+        <h3>Share of Voice vs. Marktanteil</h3>
+        <p class="sub">ESOV = Werbeanteil minus Marktanteil. Dauerhaft negativ heißt: Die Marke verliert.</p>
+        <div class="chart-wrap" id="sovChart"></div>
+        <div class="legend">
+          <span class="key"><span class="swatch" style="background:var(--ink-3)"></span>Share of Voice</span>
+          <span class="key"><span class="swatch" style="background:var(--de-emph)"></span>Marktanteil</span>
+        </div>
+        <details class="tbl"><summary>Werte als Tabelle</summary><div id="sovTable"></div></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Ansicht 2 · Messen ============ -->
+  <section class="view" id="v2" aria-label="Messen">
+    <div class="view-head">
+      <div class="eyebrow">Media Strategy &amp; Effectiveness</div>
+      <div class="row">
+        <h2>Effektivität messen</h2>
+        <p>Wirkung pro Euro auf drei Ebenen, nicht der billigste Kontakt.</p>
+      </div>
+    </div>
+
+    <div class="pills" id="campaignPills" role="group" aria-label="Kampagne wählen"></div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <h3 id="c2Title">Kampagne</h3>
+        <p class="sub">
+          <span class="lvl lvl-1">Ebene 1</span>Media-Effizienz
+          <span class="lvl lvl-2" style="margin-left:10px">Ebene 2</span>Markenwirkung
+          <span class="lvl lvl-3" style="margin-left:10px">Ebene 3</span>Geschäftswirkung
+        </p>
+        <div id="levelsTable"></div>
+      </div>
+      <div class="card">
+        <h3>Kosten gegen Wirkung je Kanal</h3>
+        <p class="sub">Blasengröße = Budgetanteil · Y-Achse: ROI-Index aus Ebene 3 · Ebene 1 und 2 beim Zeigen</p>
+        <div class="chart-wrap" id="scatter"></div>
+        <div class="legend" id="scatterLegend"></div>
+        <details class="tbl"><summary>Werte als Tabelle</summary><div id="scatterTable"></div></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Ansicht 3 · Verbessern ============ -->
+  <section class="view" id="v3" aria-label="Verbessern">
+    <div class="view-head">
+      <div class="eyebrow">Testen, lernen, umschichten</div>
+      <div class="row">
+        <h2>Pläne und Budgets verbessern</h2>
+        <p>Besser verteilen, nicht mehr ausgeben: Umschichten entlang der Sättigungskurve.</p>
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="card">
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <h3>Budget-Simulator</h3>
+          <button class="btn-ghost" id="resetMix" style="margin-left:auto">Zurücksetzen</button>
+        </div>
+        <p class="sub">Verschiebe Budget zwischen den Kanälen, die Summe bleibt 100&nbsp;%</p>
+        <div id="sliders"></div>
+        <div class="readout" aria-live="polite">
+          <div class="r"><div class="rl">Netto-Reichweite</div><div class="rv" id="roReach">–</div></div>
+          <div class="r"><div class="rl">Kosten pro Reichweitenpunkt</div><div class="rv" id="roCpr">–</div></div>
+          <div class="r"><div class="rl">Budget</div><div class="rv">100<small style="font-size:14px;color:var(--ink-3)">&nbsp;%</small></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Reichweitenkurve</h3>
+        <p class="sub" id="curveSub">Jeder weitere Budgetpunkt bringt weniger, sobald die Kurve flach wird</p>
+        <div class="chart-wrap" id="curve"></div>
+        <details class="tbl"><summary>Werte als Tabelle</summary><div id="curveTable"></div></details>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>Test-&amp;-Learn-Agenda</h3>
+      <p class="sub">Ein Markt testet, drei lernen · rund 10&nbsp;% des Budgets sind für Tests reserviert</p>
+      <div id="tests"></div>
+    </div>
+  </section>
+
+  <!-- ============ Ansicht 4 · Scorecard ============ -->
+  <section class="view" id="v4" aria-label="Scorecard">
+    <div class="view-head">
+      <div class="eyebrow">KPIs &amp; Meilensteine</div>
+      <div class="row">
+        <h2>Meine Scorecard</h2>
+        <p>Daran dürfen Sie mich messen: vier Meilensteine, vier Felder.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Meilensteine der ersten zwölf Monate</h3>
+      <div class="timeline">
+        <div class="rail"></div><div class="rail-fill" id="railFill"></div>
+        <ol id="msList"></ol>
+      </div>
+      <div class="milestone-panel" id="msPanel"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>Vier Felder, ein Versprechen</h3>
+      <p class="sub">Zielwerte folgen nach dem Audit; heute stehen Messgrößen und Richtung fest</p>
+      <div class="score-grid" id="scoreGrid"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="bar">
+    <span>Prototyp für das Gespräch am 23.&nbsp;November 2026 · Christoph Glöckel</span>
+    <span style="margin-left:auto">Tasten: Ansichten<kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> · Markt<kbd>M</kbd></span>
+  </div>
+</footer>
+
+<div id="tip" role="status"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   Dummy-Daten · Indexwerte (Basis 100) und Prozent, keine Euro
+   ============================================================ */
+const COLORS = {
+  AT: "#e43024", CH: "#2a78d6", SI: "#eda100",
+  channels: {
+    "TV":           "#e43024",
+    "Online-Video": "#2a78d6",
+    "Social":       "#eda100",
+    "OOH":          "#1baf7a",
+    "Radio":        "#6250d6",
+    "Retail Media": "#e87ba4"
+  }
+};
+const CH_NAMES = Object.keys(COLORS.channels);
+
+const MARKETS = {
+  MU: { name: "MU gesamt",  reach: 68, reachD: +3.2, cpr: 94, cprD: -6, sov: 24, som: 22, recall: 112, recallD: +5, buyer: 41, buyerD: +1.1,
+        mix: { "TV": 34, "Online-Video": 22, "Social": 14, "OOH": 12, "Radio": 10, "Retail Media": 8 },
+        spark: { reach:[61,62,64,63,65,66,66,68], cpr:[104,102,101,99,98,97,96,94], recall:[100,102,104,105,107,109,110,112] } },
+  AT: { name: "Österreich", reach: 74, reachD: +2.1, cpr: 90, cprD: -4, sov: 31, som: 30, recall: 118, recallD: +4, buyer: 52, buyerD: +0.8,
+        mix: { "TV": 38, "Online-Video": 20, "Social": 12, "OOH": 13, "Radio": 11, "Retail Media": 6 },
+        spark: { reach:[69,70,71,71,72,73,73,74], cpr:[97,96,95,94,93,92,91,90], recall:[106,108,110,112,113,115,116,118] } },
+  CH: { name: "Schweiz",    reach: 48, reachD: +5.6, cpr: 112, cprD: -9, sov: 11, som: 6,  recall: 96,  recallD: +8, buyer: 17, buyerD: +1.9,
+        mix: { "TV": 22, "Online-Video": 30, "Social": 18, "OOH": 16, "Radio": 4, "Retail Media": 10 },
+        spark: { reach:[38,40,41,43,44,45,46,48], cpr:[128,124,121,119,117,115,113,112], recall:[82,84,87,89,91,93,94,96] } },
+  SI: { name: "Slowenien",  reach: 71, reachD: +1.4, cpr: 86, cprD: -3, sov: 28, som: 26, recall: 109, recallD: +3, buyer: 47, buyerD: +0.6,
+        mix: { "TV": 26, "Online-Video": 28, "Social": 20, "OOH": 8, "Radio": 6, "Retail Media": 12 },
+        spark: { reach:[67,68,68,69,69,70,70,71], cpr:[92,91,90,89,88,88,87,86], recall:[101,102,104,105,106,107,108,109] } }
+};
+
+const CAMPAIGNS = {
+  "sommer": { name: "Sommer-Flight „Grill &amp; Chill“", plain: "Sommer-Flight „Grill & Chill“", markets: "AT · CH · SI",
+    rows: [
+      { ch: "TV",           budget: 36, reach: 58, cpr: 96,  vis: "–",  recall: "+9", consider: "+4", uplift: "+6,2 %", roi: 128, src: "TV-Panel · Post-Test" },
+      { ch: "Online-Video", budget: 24, reach: 41, cpr: 88,  vis: "71 %", recall: "+7", consider: "+5", uplift: "+4,8 %", roi: 136, src: "Plattform-Reporting · Brand-Lift" },
+      { ch: "Social",       budget: 14, reach: 33, cpr: 82,  vis: "64 %", recall: "+4", consider: "+3", uplift: "+2,1 %", roi: 117, src: "Plattform-Reporting" },
+      { ch: "OOH",          budget: 13, reach: 46, cpr: 104, vis: "–",  recall: "+5", consider: "+2", uplift: "+1,9 %", roi: 109, src: "Mobilitätsdaten · Post-Test" },
+      { ch: "Retail Media", budget: 8,  reach: 12, cpr: 118, vis: "–",  recall: "–",  consider: "+6", uplift: "+7,4 %", roi: 142, src: "Händler-Abverkauf" },
+      { ch: "Radio",        budget: 5,  reach: 28, cpr: 90,  vis: "–",  recall: "+2", consider: "+1", uplift: "+0,8 %", roi: 98,  src: "Radiotest" }
+    ]},
+  "fussball": { name: "Fußball-Leuchtturm", plain: "Fußball-Leuchtturm", markets: "AT",
+    rows: [
+      { ch: "TV",           budget: 44, reach: 66, cpr: 101, vis: "–",  recall: "+12", consider: "+6", uplift: "+7,1 %", roi: 133, src: "TV-Panel · Post-Test" },
+      { ch: "Online-Video", budget: 20, reach: 38, cpr: 92,  vis: "74 %", recall: "+8",  consider: "+4", uplift: "+3,9 %", roi: 124, src: "Brand-Lift" },
+      { ch: "Social",       budget: 16, reach: 36, cpr: 85,  vis: "66 %", recall: "+6",  consider: "+5", uplift: "+2,6 %", roi: 121, src: "Plattform-Reporting" },
+      { ch: "OOH",          budget: 14, reach: 49, cpr: 99,  vis: "–",  recall: "+6",  consider: "+2", uplift: "+2,2 %", roi: 112, src: "Mobilitätsdaten" },
+      { ch: "Retail Media", budget: 6,  reach: 10, cpr: 121, vis: "–",  recall: "–",   consider: "+7", uplift: "+8,3 %", roi: 147, src: "Händler-Abverkauf" }
+    ]},
+  "launch": { name: "Produkt-Launch Slowenien", plain: "Produkt-Launch Slowenien", markets: "SI",
+    rows: [
+      { ch: "Online-Video", budget: 34, reach: 47, cpr: 84,  vis: "76 %", recall: "+10", consider: "+7", uplift: "+5,6 %", roi: 139, src: "Brand-Lift · Panel" },
+      { ch: "Social",       budget: 26, reach: 42, cpr: 79,  vis: "69 %", recall: "+7",  consider: "+6", uplift: "+3,4 %", roi: 128, src: "Plattform-Reporting" },
+      { ch: "TV",           budget: 22, reach: 51, cpr: 97,  vis: "–",  recall: "+8",  consider: "+3", uplift: "+3,0 %", roi: 115, src: "TV-Panel" },
+      { ch: "Retail Media", budget: 12, reach: 14, cpr: 108, vis: "–",  recall: "–",   consider: "+8", uplift: "+9,1 %", roi: 151, src: "Händler-Abverkauf" },
+      { ch: "OOH",          budget: 6,  reach: 21, cpr: 112, vis: "–",  recall: "+3",  consider: "+1", uplift: "+0,9 %", roi: 96,  src: "Post-Test" }
+    ]}
+};
+
+/* Sättigungskurven je Kanal: reach(b) = max · (1 − e^(−k·b)) */
+const SAT = {
+  "TV":           { max: 72, k: 0.055 },
+  "Online-Video": { max: 58, k: 0.075 },
+  "Social":       { max: 44, k: 0.095 },
+  "OOH":          { max: 52, k: 0.060 },
+  "Radio":        { max: 38, k: 0.080 },
+  "Retail Media": { max: 20, k: 0.110 }
+};
+const MIX_START = { "TV": 34, "Online-Video": 22, "Social": 14, "OOH": 12, "Radio": 10, "Retail Media": 8 };
+
+const TESTS = [
+  { name: "Connected TV als Reichweiten-Ergänzung zu linearem TV", market: "AT", status: "done",
+    hyp: "CTV erreicht unter 35-Jährige, die linear kaum noch erreichbar sind, zu vergleichbaren Kosten.",
+    result: "Inkrementelle Reichweite +6 Punkte in der jungen Zielgruppe, Kosten pro Punkt Index 91.",
+    decision: "Ausrollen: CTV wird fester Bestandteil des Video-Mix in allen drei Märkten." },
+  { name: "Digitale Außenwerbung an Verkehrsknoten vor dem Wochenende", market: "SI", status: "run",
+    hyp: "DOOH am Donnerstag und Freitag hebt die Käuferreichweite am Snack-Wochenende.",
+    result: "Läuft seit vier Wochen, Zwischenstand Uplift +1,8 % gegen Kontrollregion.",
+    decision: "Entscheidung nach Flight-Ende, Vorlage im Quartals-Review." },
+  { name: "Retail Media im Verbund mit Zweitplatzierung", market: "AT", status: "run",
+    hyp: "Onsite-Werbung wirkt deutlich stärker, wenn das Produkt gleichzeitig prominent im Markt steht.",
+    result: "Läuft, erste Lesung deutet auf ROI-Index über 140 im Verbund.",
+    decision: "Bei Bestätigung: gemeinsames Planungsformat mit dem Vertrieb." },
+  { name: "Französischsprachige Kreation für die Westschweiz", market: "CH", status: "plan",
+    hyp: "Eigenständige Adaption statt Übersetzung hebt Werbeerinnerung in der Romandie.",
+    result: "Start im nächsten Flight, Messung über regionalen Brand-Lift.",
+    decision: "Offen." }
+];
+
+const MILESTONES = [
+  { t: "Tag 30", sub: "Verstehen", items: [
+    "Gespräche mit allen Schlüsselpersonen geführt: Team, Brand, Märkte, Agenturen, Gruppe",
+    "Einzelgespräche im Team abgeschlossen, Erwartungen und Entwicklungswünsche notiert",
+    "Überblick über laufende Pläne, Verträge und Tools steht" ]},
+  { t: "Tag 90", sub: "Faktenbasis", items: [
+    "Media-Audit und Baseline für Österreich, Schweiz und Slowenien liegen vor",
+    "KPI-Set Version 1 mit Brand und Märkten abgestimmt",
+    "Zwei bis drei Quick Wins umgesetzt, etwa einheitliches Reporting und gemeinsamer Kalender",
+    "Entwicklungsgespräch mit jedem Teammitglied geführt" ]},
+  { t: "Monat 6", sub: "Rahmen", items: [
+    "Media-Playbook Version 1 verabschiedet, gemeinsam mit Brand, Märkten und Agentur",
+    "Dieses Cockpit läuft mit echten Daten",
+    "Erste Kampagne nach gemeinsamem Standard in mindestens zwei Märkten",
+    "Agentur-Scorecard eingeführt, sie gilt in beide Richtungen" ]},
+  { t: "Monat 12", sub: "Beweis", items: [
+    "Erste gemeinsame Jahres-Mediaplanung für alle drei Märkte steht",
+    "Effizienz gegenüber der Baseline nachweisbar verbessert",
+    "Mindestens vier Tests ausgewertet, Ergebnisse wirken in allen Märkten",
+    "Feedback von Team, Brand und Märkten über Zielwert" ]}
+];
+
+const SCORE = [
+  { name: "Media-Effizienz", color: "#2a78d6", rows: [
+    ["Kosten pro Reichweitenpunkt", "sinken, Ziel nach Audit"],
+    ["Netto-Reichweite bei gleichem Budget", "steigt"],
+    ["Kampagnen mit Nachbericht", "100 %"] ]},
+  { name: "Markenwirkung", color: "#e43024", rows: [
+    ["Werbeerinnerung Fokusmarken", "über Baseline"],
+    ["Kaufbereitschaft", "über Baseline"],
+    ["Share of Voice vs. Marktanteil", "je Marktrolle"] ]},
+  { name: "Geschäftsbeitrag", color: "#1baf7a", rows: [
+    ["Käuferreichweite Fokusmarken", "steigend"],
+    ["Media-ROI aus Modellierung", "steigend"],
+    ["Einsparung durch Synergien", "nach Audit beziffert"] ]},
+  { name: "Team & Zusammenarbeit", color: "#eda100", rows: [
+    ["Engagement im Team", "über Zielwert"],
+    ["Zufriedenheit Brand & Märkte", "über Zielwert"],
+    ["Agentur-Score, beide Richtungen", "halbjährlich erhoben"] ]}
+];
+
+/* ============================================================
+   Hilfen
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html !== undefined) n.innerHTML = html; return n; };
+const fmt1 = v => v.toLocaleString("de-AT", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs) { const n = document.createElementNS(SVGNS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; }
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* Zahlen hochzählen */
+function countUp(node, target, dec, suffix) {
+  if (reduceMotion) { node.textContent = target.toLocaleString("de-AT", {minimumFractionDigits:dec, maximumFractionDigits:dec}); return; }
+  const dur = 650, t0 = performance.now(), from = target * 0.4;
+  function step(t) {
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    node.textContent = (from + (target - from) * e).toLocaleString("de-AT", {minimumFractionDigits:dec, maximumFractionDigits:dec});
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* Tooltip */
+const tip = $("#tip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.classList.add("show");
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let left = x + 14, top = y - h - 10;
+  if (left + w > innerWidth - 8) left = x - w - 14;
+  if (top < 8) top = y + 16;
+  tip.style.left = left + "px"; tip.style.top = top + "px";
+}
+function hideTip() { tip.classList.remove("show"); }
+
+/* ============================================================
+   Zustand
+   ============================================================ */
+let market = "MU";
+let campaign = "sommer";
+let milestone = 1;
+let mix = { ...MIX_START };
+
+/* ============================================================
+   Segmente (Markt + Ansicht)
+   ============================================================ */
+function wireSeg(segId, onPick) {
+  const seg = document.getElementById(segId);
+  const thumb = seg.querySelector(".thumb");
+  const btns = [...seg.querySelectorAll("button")];
+  function place(btn, animate = true) {
+    if (!animate) thumb.style.transition = "none";
+    thumb.style.left = btn.offsetLeft + "px";
+    thumb.style.width = btn.offsetWidth + "px";
+    if (!animate) requestAnimationFrame(() => thumb.style.transition = "");
+  }
+  btns.forEach(b => b.addEventListener("click", () => {
+    btns.forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    place(b); onPick(b);
+  }));
+  place(btns.find(b => b.getAttribute("aria-pressed") === "true"), false);
+  addEventListener("resize", () => place(btns.find(b => b.getAttribute("aria-pressed") === "true"), false));
+  return { btns, place };
+}
+
+const marketSeg = wireSeg("marketSeg", btn => { market = btn.dataset.market; renderMarketViews(); });
+const viewSeg = wireSeg("viewSeg", btn => showView(btn.dataset.view));
+
+function showView(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === id));
+  if (id === "v1") renderV1();
+  if (id === "v3") drawCurve();
+}
+
+/* Tastatur: 1–4 Ansichten, M Markt weiter */
+addEventListener("keydown", e => {
+  if (e.target.matches("input, textarea, select")) return;
+  const views = ["v1","v2","v3","v4"];
+  if (e.key >= "1" && e.key <= "4") viewSeg.btns[+e.key - 1].click();
+  if (e.key.toLowerCase() === "m") {
+    const i = marketSeg.btns.findIndex(b => b.dataset.market === market);
+    marketSeg.btns[(i + 1) % marketSeg.btns.length].click();
+  }
+});
+
+/* ============================================================
+   Ansicht 1 · Überblick
+   ============================================================ */
+function sparkline(values, color) {
+  const w = 84, h = 30, min = Math.min(...values), max = Math.max(...values);
+  const sx = i => 3 + i * (w - 6) / (values.length - 1);
+  const sy = v => h - 4 - (v - min) / (max - min || 1) * (h - 8);
+  const d = values.map((v, i) => (i ? "L" : "M") + sx(i).toFixed(1) + " " + sy(v).toFixed(1)).join(" ");
+  const svg = svgEl("svg", { width: w, height: h, class: "spark", "aria-hidden": "true" });
+  svg.appendChild(svgEl("path", { d, fill: "none", stroke: "#d9d4cc", "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+  const lastX = sx(values.length - 1), lastY = sy(values[values.length - 1]);
+  svg.appendChild(svgEl("circle", { cx: lastX, cy: lastY, r: 4, fill: color, stroke: "#fdfcfa", "stroke-width": 2 }));
+  return svg;
+}
+
+function kpiTile({ label, value, dec, suffix, delta, deltaGoodWhen, foot, spark, sparkColor }) {
+  const card = el("div", "card tile");
+  card.appendChild(el("div", "label", label));
+  const v = el("div", "value");
+  const num = el("span"); v.appendChild(num);
+  if (suffix) v.appendChild(el("small", null, suffix));
+  card.appendChild(v);
+  const up = delta > 0, good = (deltaGoodWhen === "up") === up;
+  const d = el("div", "delta " + (good ? "up" : "down"),
+    (up ? "▲" : "▼") + " " + fmt1(Math.abs(delta)) + (suffix === "%" ? " Pkt." : "") + ' <span class="vs">vs. Vorjahr</span>');
+  card.appendChild(d);
+  if (foot) card.appendChild(el("div", "foot", foot));
+  if (spark) card.appendChild(sparkline(spark, sparkColor));
+  countUp(num, value, dec);
+  return card;
+}
+
+const HERO = {
+  MU: { val: "68", unit: "%", label: "Netto-Reichweite in der Zielgruppe",
+        txt: "<b>Mehr Knistern pro Euro:</b> +3,2 Punkte Reichweite bei 6 % niedrigeren Kosten pro Reichweitenpunkt – eine Media-Logik, drei Märkte." },
+  AT: { val: "74", unit: "%", label: "Netto-Reichweite im Heimmarkt",
+        txt: "<b>Führung verteidigen:</b> breite Präsenz zu sinkenden Kosten (CPR −4 %). Eine starke Marke ist der beste Schutz gegen die Eigenmarke." },
+  CH: { val: "+5", unit: "Pkt.", label: "ESOV: Werbeanteil über Marktanteil",
+        txt: "<b>Herausforderer-Logik:</b> Wir werben bewusst über Marktanteil und bündeln auf wenige Anlässe – Reichweite wächst um 5,6 Punkte." },
+  SI: { val: "86", unit: "", label: "Kosten pro Reichweitenpunkt, Index",
+        txt: "<b>Effizienzführer und Testlabor:</b> der günstigste Markt der MU erprobt neue Formate, bevor sie skalieren – ein Markt testet, drei lernen." }
+};
+
+function renderV1() {
+  const m = MARKETS[market];
+  $("#v1-title").textContent = "Überblick · " + m.name;
+
+  const h = HERO[market];
+  $("#heroVal").innerHTML = h.val + (h.unit ? `<small>${h.unit}</small>` : "");
+  $("#heroLabel").textContent = h.label;
+  $("#heroTxt").innerHTML = h.txt;
+
+  const row = $("#kpiRow"); row.innerHTML = "";
+  row.appendChild(kpiTile({ label: "Netto-Reichweite", value: m.reach, dec: 0, suffix: "%", delta: m.reachD, deltaGoodWhen: "up", spark: m.spark.reach, sparkColor: "#e43024", foot: "Zielgruppe, mind. 1 Kontakt" }));
+  row.appendChild(kpiTile({ label: "Kosten pro Reichweitenpunkt", value: m.cpr, dec: 0, delta: m.cprD, deltaGoodWhen: "down", spark: m.spark.cpr, sparkColor: "#2a78d6", foot: "Index, Basis 100 = Vorjahr" }));
+  row.appendChild(kpiTile({ label: "Share of Voice", value: m.sov, dec: 0, suffix: "%", delta: m.sov - m.som, deltaGoodWhen: "up", foot: "gegen Marktanteil " + m.som + " %" }));
+  row.appendChild(kpiTile({ label: "Werbeerinnerung", value: m.recall, dec: 0, delta: m.recallD, deltaGoodWhen: "up", spark: m.spark.recall, sparkColor: "#eda100", foot: "Index, Basis 100 = Kategorie" }));
+  row.appendChild(kpiTile({ label: "Käuferreichweite", value: m.buyer, dec: 0, suffix: "%", delta: m.buyerD, deltaGoodWhen: "up", foot: "Haushalte, kaufen mind. 1×/Jahr" }));
+
+  /* SOV-Delta-Kachel korrigieren: "vs. Vorjahr" passt dort nicht */
+  row.children[2].querySelector(".vs").textContent = "Abstand zum Marktanteil";
+
+  renderMixBar(m);
+  renderSov();
+}
+
+function renderMixBar(m) {
+  const wrap = $("#mixBar"); wrap.innerHTML = "";
+  $("#mixSub").textContent = "Anteil am Media-Budget · " + m.name + " · laufendes Planjahr";
+  const W = Math.max(wrap.clientWidth || 560, 320), H = 74, barH = 30, y0 = 12;
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, role: "img", "aria-label": "Budgetverteilung nach Kanal" });
+  let x = 0; const gap = 2;
+  CH_NAMES.forEach((ch, i) => {
+    const share = m.mix[ch]; const w = share / 100 * (W - gap * (CH_NAMES.length - 1));
+    const r = svgEl("rect", { x, y: y0, width: Math.max(w, 0), height: barH, rx: 4, fill: COLORS.channels[ch] });
+    r.style.cursor = "default";
+    r.addEventListener("pointermove", e => showTip(
+      `<div class="t-title">${ch}</div><div class="t-row"><b>${share} %</b><span>Budgetanteil</span></div>`, e.clientX, e.clientY));
+    r.addEventListener("pointerleave", hideTip);
+    if (!reduceMotion) { r.style.transformOrigin = x + "px 0px"; r.classList.add("grow"); r.style.animationDelay = (0.04 * i) + "s"; }
+    svg.appendChild(r);
+    if (w > 46) {
+      const t = svgEl("text", { x: x + 9, y: y0 + barH / 2 + 4, fill: "#ffffff", "font-size": 11.5, "font-weight": 700 });
+      if (ch === "Social") { t.setAttribute("fill", "#1d1a17"); }
+      t.textContent = share + " %";
+      svg.appendChild(t);
+    }
+    x += w + gap;
+  });
+  wrap.appendChild(svg);
+
+  const leg = $("#mixLegend"); leg.innerHTML = "";
+  CH_NAMES.forEach(ch => {
+    leg.appendChild(el("span", "key", `<span class="swatch" style="background:${COLORS.channels[ch]}"></span>${ch} <b>${m.mix[ch]} %</b>`));
+  });
+
+  const digital = m.mix["Online-Video"] + m.mix["Social"] + m.mix["Retail Media"];
+  let insight = $("#mixInsight");
+  if (!insight) {
+    insight = el("p", "sub"); insight.id = "mixInsight";
+    insight.style.cssText = "margin:14px 0 0;padding-top:12px;border-top:1px solid var(--grid)";
+    $("#mixLegend").after(insight);
+  }
+  insight.innerHTML = `Digitale Kanäle tragen <b style="color:var(--ink)">${digital} %</b> des Budgets` +
+    (market === "CH" ? " – der Herausforderer-Markt plant am digitalsten." :
+     market === "SI" ? " – Slowenien ist der digitalste der drei Märkte und damit der natürliche Testmarkt." :
+     " – Richtung der Ausschreibung: ein zunehmend digitaler Media-Mix.");
+
+  $("#mixTable").innerHTML = "<table><thead><tr><th>Kanal</th><th class='num'>Anteil</th></tr></thead><tbody>" +
+    CH_NAMES.map(ch => `<tr><td>${ch}</td><td class='num'>${m.mix[ch]} %</td></tr>`).join("") + "</tbody></table>";
+}
+
+function renderSov() {
+  const wrap = $("#sovChart"); wrap.innerHTML = "";
+  const rows = ["AT", "CH", "SI"];
+  const W = Math.max(wrap.clientWidth || 420, 300), rowH = 52, H = rows.length * rowH + 18;
+  const maxV = 40, label = 92, right = 46;
+  const scale = v => label + v / maxV * (W - label - right);
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, role: "img", "aria-label": "Share of Voice gegen Marktanteil je Markt" });
+  [0, 10, 20, 30, 40].forEach(v => {
+    svg.appendChild(svgEl("line", { x1: scale(v), x2: scale(v), y1: 6, y2: H - 14, stroke: "#ece8e1", "stroke-width": 1 }));
+    const t = svgEl("text", { x: scale(v), y: H - 2, class: "tick-label", "text-anchor": "middle" }); t.textContent = v; svg.appendChild(t);
+  });
+  rows.forEach((mk, i) => {
+    const d = MARKETS[mk], y = 10 + i * rowH;
+    const name = svgEl("text", { x: 0, y: y + 20, "font-size": 13, "font-weight": 650, fill: "#1d1a17" }); name.textContent = d.name; svg.appendChild(name);
+    /* Farben folgen dem Markt, nie der Auswahl – die Auswahl betont nur */
+    const dim = market !== "MU" && mk !== market;
+    const som = svgEl("rect", { x: scale(0), y: y + 26, width: scale(d.som) - scale(0), height: 9, rx: 3, fill: "#c9c3ba", opacity: dim ? 0.45 : 1 });
+    const sov = svgEl("rect", { x: scale(0), y: y + 8,  width: scale(d.sov) - scale(0), height: 13, rx: 4, fill: COLORS[mk], opacity: dim ? 0.38 : 1 });
+    const esov = d.sov - d.som;
+    [ [sov, "Share of Voice", d.sov], [som, "Marktanteil", d.som] ].forEach(([r, lab, val]) => {
+      r.addEventListener("pointermove", e => showTip(`<div class="t-title">${d.name}</div><div class="t-row"><b>${val} %</b><span>${lab}</span></div><div class="t-row"><b>${esov >= 0 ? "+" : "−"}${Math.abs(esov)} Pkt.</b><span>ESOV</span></div>`, e.clientX, e.clientY));
+      r.addEventListener("pointerleave", hideTip);
+    });
+    if (!reduceMotion) [sov, som].forEach(r => { r.style.transformOrigin = scale(0) + "px 0px"; r.classList.add("grow"); r.style.animationDelay = (0.08 * i) + "s"; });
+    svg.appendChild(som); svg.appendChild(sov);
+    const vt = svgEl("text", { x: scale(d.sov) + 7, y: y + 19, class: "bar-label" });
+    vt.textContent = W >= 390 ? `${d.sov} % · ESOV ${esov >= 0 ? "+" : "−"}${Math.abs(esov)}` : `${d.sov} %`;
+    if (dim) vt.setAttribute("opacity", 0.5);
+    svg.appendChild(vt);
+    const st = svgEl("text", { x: scale(d.som) + 7, y: y + 34, class: "tick-label" }); st.textContent = d.som + " %"; svg.appendChild(st);
+  });
+  wrap.appendChild(svg);
+  $("#sovTable").innerHTML = "<table><thead><tr><th>Markt</th><th class='num'>Share of Voice</th><th class='num'>Marktanteil</th><th class='num'>ESOV</th></tr></thead><tbody>" +
+    rows.map(mk => { const d = MARKETS[mk], e2 = d.sov - d.som;
+      return `<tr><td>${d.name}</td><td class='num'>${d.sov} %</td><td class='num'>${d.som} %</td><td class='num'>${e2 >= 0 ? "+" : "−"}${Math.abs(e2)} Pkt.</td></tr>`; }).join("") + "</tbody></table>";
+}
+
+/* ============================================================
+   Ansicht 2 · Messen
+   ============================================================ */
+function renderCampaignPills() {
+  const wrap = $("#campaignPills"); wrap.innerHTML = "";
+  Object.entries(CAMPAIGNS).forEach(([key, c]) => {
+    const b = el("button", null, c.name + ' <span style="opacity:.55;font-weight:500">· ' + c.markets + "</span>");
+    b.setAttribute("aria-pressed", key === campaign ? "true" : "false");
+    b.addEventListener("click", () => { campaign = key; renderCampaignPills(); renderV2(); });
+    wrap.appendChild(b);
+  });
+}
+
+function renderV2() {
+  const c = CAMPAIGNS[campaign];
+  $("#c2Title").textContent = c.plain;
+
+  $("#levelsTable").innerHTML = "<table><thead><tr>" +
+    "<th>Kanal</th><th class='num'>Budget</th>" +
+    "<th class='num'><span class='lvl lvl-1'>1</span>Reichw.</th><th class='num'><span class='lvl lvl-1'>1</span>CPR</th>" +
+    "<th class='num'><span class='lvl lvl-2'>2</span>Erinn.</th>" +
+    "<th class='num'><span class='lvl lvl-3'>3</span>Uplift</th><th class='num'><span class='lvl lvl-3'>3</span>ROI</th>" +
+    "</tr></thead><tbody>" +
+    c.rows.map(r =>
+      `<tr><td><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${COLORS.channels[r.ch]};margin-right:7px"></span>${r.ch}` +
+      `<div style="font-size:11px;color:var(--ink-3);margin-left:16px">${r.src}</div></td>` +
+      `<td class='num'>${r.budget} %</td><td class='num'>${r.reach} %</td><td class='num'>${r.cpr}</td>` +
+      `<td class='num'>${r.recall}</td><td class='num'>${r.uplift}</td><td class='num'><b>${r.roi}</b></td></tr>`
+    ).join("") + "</tbody></table>" +
+    "<p style='font-size:11.5px;color:var(--ink-3);margin-top:10px'>CPR, ROI und Erinnerung als Index (100 = Benchmark) · Quellen je Kanal unter dem Kanalnamen</p>";
+
+  renderScatter(c);
+}
+
+function renderScatter(c) {
+  const wrap = $("#scatter"); wrap.innerHTML = "";
+  const W = Math.max(wrap.clientWidth || 480, 320), H = 290;
+  const m = { l: 46, r: 16, t: 14, b: 40 };
+  const xMin = 70, xMax = 130, yMin = 90, yMax = 160;
+  const X = v => m.l + (v - xMin) / (xMax - xMin) * (W - m.l - m.r);
+  const Y = v => H - m.b - (v - yMin) / (yMax - yMin) * (H - m.t - m.b);
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, role: "img", "aria-label": "Kosten pro Reichweitenpunkt gegen ROI je Kanal" });
+
+  for (let v = xMin; v <= xMax; v += 15) {
+    svg.appendChild(svgEl("line", { x1: X(v), x2: X(v), y1: m.t, y2: H - m.b, stroke: "#ece8e1" }));
+    const t = svgEl("text", { x: X(v), y: H - m.b + 16, class: "tick-label", "text-anchor": "middle" }); t.textContent = v; svg.appendChild(t);
+  }
+  for (let v = yMin; v <= yMax; v += 20) {
+    svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: "#ece8e1" }));
+    const t = svgEl("text", { x: m.l - 8, y: Y(v) + 4, class: "tick-label", "text-anchor": "end" }); t.textContent = v; svg.appendChild(t);
+  }
+  const xl = svgEl("text", { x: W - m.r, y: H - 6, class: "axis-label", "text-anchor": "end" }); xl.textContent = "Kosten pro Reichweitenpunkt (Index, niedriger = besser)"; svg.appendChild(xl);
+  const yl = svgEl("text", { x: m.l, y: 10, class: "axis-label" }); yl.textContent = "ROI-Index"; svg.appendChild(yl);
+
+  /* Ziel-Quadrant: günstig und wirksam */
+  const q = svgEl("rect", { x: X(xMin), y: Y(yMax), width: X(100) - X(xMin), height: Y(120) - Y(yMax), fill: "#e43024", "fill-opacity": 0.045, rx: 6 });
+  svg.appendChild(q);
+  const ql = svgEl("text", { x: X(xMin) + 8, y: Y(yMax) + 16, "font-size": 11, "font-weight": 650, fill: "#b81f16" });
+  ql.textContent = "Ziel: günstig und wirksam"; svg.appendChild(ql);
+
+  c.rows.forEach((r, i) => {
+    const cx = X(r.cpr), cy = Y(r.roi), rad = 7 + r.budget * 0.5;
+    const dot = svgEl("circle", { cx, cy, r: rad, fill: COLORS.channels[r.ch], "fill-opacity": 0.85, stroke: "#fdfcfa", "stroke-width": 2 });
+    const hit = svgEl("circle", { cx, cy, r: Math.max(rad + 6, 17), fill: "transparent" });
+    hit.style.cursor = "default";
+    hit.addEventListener("pointermove", e => showTip(
+      `<div class="t-title"><span class="t-key" style="background:${COLORS.channels[r.ch]}"></span>${r.ch}</div>` +
+      `<div class="t-row"><b>${r.reach} %</b><span>Reichweite · Ebene 1</span></div>` +
+      `<div class="t-row"><b>${r.cpr}</b><span>CPR-Index · Ebene 1</span></div>` +
+      `<div class="t-row"><b>${r.recall}</b><span>Erinnerung · Ebene 2</span></div>` +
+      `<div class="t-row"><b>${r.uplift}</b><span>Absatz-Uplift · Ebene 3</span></div>` +
+      `<div class="t-row"><b>${r.roi}</b><span>ROI-Index · Ebene 3</span></div>` +
+      `<div class="t-row"><b>${r.budget} %</b><span>Budgetanteil</span></div>` +
+      `<div class="t-row"><b>${r.src}</b><span>Quelle</span></div>`, e.clientX, e.clientY));
+    hit.addEventListener("pointerleave", hideTip);
+    if (!reduceMotion) { dot.style.transformOrigin = `${cx}px ${cy}px`; dot.classList.add("pop"); dot.style.animationDelay = (.05 * i) + "s"; }
+    svg.appendChild(dot); svg.appendChild(hit);
+    if (r.budget >= 20) { const t = svgEl("text", { x: cx, y: cy - rad - 6, class: "bar-label", "text-anchor": "middle" }); t.textContent = r.ch; svg.appendChild(t); }
+  });
+  wrap.appendChild(svg);
+
+  const leg = $("#scatterLegend"); leg.innerHTML = "";
+  c.rows.forEach(r => leg.appendChild(el("span", "key", `<span class="swatch" style="background:${COLORS.channels[r.ch]}"></span>${r.ch}`)));
+
+  $("#scatterTable").innerHTML = "<table><thead><tr><th>Kanal</th><th class='num'>CPR-Index</th><th class='num'>ROI-Index</th><th class='num'>Budget</th></tr></thead><tbody>" +
+    c.rows.map(r => `<tr><td>${r.ch}</td><td class='num'>${r.cpr}</td><td class='num'>${r.roi}</td><td class='num'>${r.budget} %</td></tr>`).join("") + "</tbody></table>";
+}
+
+/* ============================================================
+   Ansicht 3 · Verbessern
+   ============================================================ */
+function chReach(ch, b) { return SAT[ch].max * (1 - Math.exp(-SAT[ch].k * b)); }
+/* Netto-Reichweite: Kanäle überschneiden sich stark in der Zielgruppe,
+   darum zählt je Kanal nur ein Teil als inkrementell (Dedup-Faktor). */
+const DEDUP = 0.5;
+function combined(mixObj) {
+  let miss = 1;
+  CH_NAMES.forEach(ch => { miss *= 1 - DEDUP * chReach(ch, mixObj[ch]) / 100; });
+  return (1 - miss) * 100;
+}
+const BASE_REACH = combined(MIX_START);
+
+function renderSliders() {
+  const wrap = $("#sliders"); wrap.innerHTML = "";
+  CH_NAMES.forEach(ch => {
+    const row = el("div", "mix-row");
+    const sat = chReach(ch, mix[ch]) / SAT[ch].max > 0.82;
+    row.appendChild(el("div", "name", `<span class="swatch" style="background:${COLORS.channels[ch]}"></span>${ch}${sat ? '<span class="sat" title="Kurve wird flach">gesättigt</span>' : ""}`));
+    const input = document.createElement("input");
+    input.type = "range"; input.min = 0; input.max = 60; input.step = 1; input.value = mix[ch];
+    input.style.setProperty("--thumb", COLORS.channels[ch]);
+    input.setAttribute("aria-label", "Budgetanteil " + ch);
+    input.addEventListener("input", () => rebalance(ch, +input.value));
+    row.appendChild(input);
+    const out = el("output", null, `${mix[ch]}<small> %</small>`);
+    row.appendChild(out);
+    wrap.appendChild(row);
+  });
+}
+
+function rebalance(changed, newVal) {
+  const old = mix[changed];
+  let diff = newVal - old;
+  const others = CH_NAMES.filter(c => c !== changed);
+  const pool = others.reduce((s, c) => s + mix[c], 0);
+  if (pool - diff < 0) { diff = pool; newVal = old + pool; }
+  mix[changed] = newVal;
+  let rest = diff;
+  others.forEach((c, i) => {
+    const share = pool > 0 ? mix[c] / pool : 1 / others.length;
+    let take = i === others.length - 1 ? rest : Math.round(diff * share);
+    take = Math.min(take, mix[c]);
+    mix[c] -= take; rest -= take;
+  });
+  /* Rundungsrest ausgleichen */
+  let sum = CH_NAMES.reduce((s, c) => s + mix[c], 0);
+  if (sum !== 100) {
+    const fix = CH_NAMES.find(c => c !== changed && mix[c] + (100 - sum) >= 0) || changed;
+    mix[fix] += 100 - sum;
+  }
+  renderSliders(); updateReadouts(); drawCurve(false);
+}
+
+function updateReadouts() {
+  const reach = combined(mix);
+  const cpr = 100 / reach * BASE_REACH; /* Index: Basis-Mix = 100 */
+  const dR = reach - BASE_REACH, dC = cpr - 100;
+  const chgR = Math.abs(dR) < 0.05 ? '<span class="chg flat">±0</span>'
+    : `<span class="chg ${dR > 0 ? "up" : "down"}">${dR > 0 ? "+" : "−"}${fmt1(Math.abs(dR))}</span>`;
+  const chgC = Math.abs(dC) < 0.05 ? '<span class="chg flat">±0</span>'
+    : `<span class="chg ${dC < 0 ? "up" : "down"}">${dC > 0 ? "+" : "−"}${fmt1(Math.abs(dC))}</span>`;
+  $("#roReach").innerHTML = fmt1(reach) + '<small style="font-size:14px;color:var(--ink-3)"> %</small>' + chgR;
+  $("#roCpr").innerHTML = fmt1(cpr) + chgC;
+}
+
+let curveAnimated = false;
+function drawCurve(animate = true) {
+  const wrap = $("#curve"); wrap.innerHTML = "";
+  const W = Math.max(wrap.clientWidth || 480, 320), H = 280;
+  const mg = { l: 44, r: 18, t: 16, b: 42 };
+  const X = b => mg.l + b / 60 * (W - mg.l - mg.r);
+  const Y = v => H - mg.b - v / 80 * (H - mg.t - mg.b);
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: "100%", height: H, role: "img", "aria-label": "Reichweitenkurven je Kanal über dem Budgetanteil" });
+
+  [0, 20, 40, 60, 80].forEach(v => {
+    svg.appendChild(svgEl("line", { x1: mg.l, x2: W - mg.r, y1: Y(v), y2: Y(v), stroke: "#ece8e1" }));
+    const t = svgEl("text", { x: mg.l - 8, y: Y(v) + 4, class: "tick-label", "text-anchor": "end" }); t.textContent = v; svg.appendChild(t);
+  });
+  [0, 15, 30, 45, 60].forEach(b => {
+    const t = svgEl("text", { x: X(b), y: H - mg.b + 16, class: "tick-label", "text-anchor": "middle" }); t.textContent = b; svg.appendChild(t);
+  });
+  const xl = svgEl("text", { x: W - mg.r, y: H - 8, class: "axis-label", "text-anchor": "end" }); xl.textContent = "Budgetanteil in %"; svg.appendChild(xl);
+  const yl = svgEl("text", { x: mg.l, y: 10, class: "axis-label" }); yl.textContent = "Reichweite in % der Zielgruppe"; svg.appendChild(yl);
+
+  /* Fokuskanäle farbig, Rest zurückhaltend */
+  const focus = ["TV", "Online-Video"];
+  CH_NAMES.forEach(ch => {
+    let d = "";
+    for (let b = 0; b <= 60; b += 1.5) d += (b ? " L" : "M") + X(b).toFixed(1) + " " + Y(chReach(ch, b)).toFixed(1);
+    const inFocus = focus.includes(ch);
+    const p = svgEl("path", { d, fill: "none", stroke: inFocus ? COLORS.channels[ch] : "#d9d4cc", "stroke-width": inFocus ? 2.5 : 2, "stroke-linecap": "round" });
+    if (animate && !curveAnimated && !reduceMotion) p.classList.add("draw");
+    svg.appendChild(p);
+    const yEnd = Y(chReach(ch, 60));
+    const t = svgEl("text", { x: W - mg.r - 2, y: yEnd - 6, class: "bar-label", "text-anchor": "end" });
+    t.setAttribute("fill", inFocus ? "#1d1a17" : "#9b948b"); t.textContent = ch; svg.appendChild(t);
+    /* Marker: aktueller Budgetanteil */
+    const bx = X(mix[ch]), by = Y(chReach(ch, mix[ch]));
+    const mk = svgEl("circle", { cx: bx, cy: by, r: 6, fill: COLORS.channels[ch], stroke: "#fdfcfa", "stroke-width": 2 });
+    const hit = svgEl("circle", { cx: bx, cy: by, r: 16, fill: "transparent" });
+    hit.addEventListener("pointermove", e => showTip(
+      `<div class="t-title"><span class="t-key" style="background:${COLORS.channels[ch]}"></span>${ch}</div>` +
+      `<div class="t-row"><b>${mix[ch]} %</b><span>Budgetanteil</span></div>` +
+      `<div class="t-row"><b>${fmt1(chReach(ch, mix[ch]))} %</b><span>Reichweite</span></div>`, e.clientX, e.clientY));
+    hit.addEventListener("pointerleave", hideTip);
+    svg.appendChild(mk); svg.appendChild(hit);
+  });
+  if (animate) curveAnimated = true;
+  wrap.appendChild(svg);
+
+  $("#curveTable").innerHTML = "<table><thead><tr><th>Kanal</th><th class='num'>Budget</th><th class='num'>Reichweite</th><th class='num'>Sättigung</th></tr></thead><tbody>" +
+    CH_NAMES.map(ch => {
+      const r = chReach(ch, mix[ch]), satP = r / SAT[ch].max * 100;
+      return `<tr><td>${ch}</td><td class='num'>${mix[ch]} %</td><td class='num'>${fmt1(r)} %</td><td class='num'>${Math.round(satP)} %</td></tr>`;
+    }).join("") + "</tbody></table>";
+}
+
+$("#resetMix").addEventListener("click", () => { mix = { ...MIX_START }; renderSliders(); updateReadouts(); drawCurve(false); });
+
+function renderTests() {
+  const wrap = $("#tests"); wrap.innerHTML = "";
+  const stLabel = { done: "ausgewertet", run: "läuft", plan: "geplant" };
+  const stClass = { done: "st-done", run: "st-run", plan: "st-plan" };
+  TESTS.forEach(t => {
+    const d = el("details", "test-item");
+    d.innerHTML = `<summary><svg class="chev" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>` +
+      `${t.name} <span style="color:var(--ink-3);font-weight:500">· ${t.market}</span><span class="st ${stClass[t.status]}">${stLabel[t.status]}</span></summary>` +
+      `<div class="body"><b>Hypothese:</b> ${t.hyp}<br><b>Stand:</b> ${t.result}<br><b>Entscheidung:</b> ${t.decision}</div>`;
+    wrap.appendChild(d);
+  });
+}
+
+/* ============================================================
+   Ansicht 4 · Scorecard
+   ============================================================ */
+function renderTimeline() {
+  const ol = $("#msList"); ol.innerHTML = "";
+  MILESTONES.forEach((ms, i) => {
+    const li = el("li");
+    const b = el("button", null, `<span class="knot"></span><span class="t-label">${ms.t}</span><span class="t-sub">${ms.sub}</span>`);
+    b.setAttribute("aria-pressed", i === milestone ? "true" : "false");
+    b.addEventListener("click", () => { milestone = i; renderTimeline(); renderMilestone(); });
+    li.appendChild(b); ol.appendChild(li);
+  });
+  $("#railFill").style.width = (milestone / (MILESTONES.length - 1) * 100) + "%";
+}
+
+function renderMilestone() {
+  const ms = MILESTONES[milestone];
+  $("#msPanel").innerHTML = `<h4><span>${ms.t}</span> · ${ms.sub}</h4><ul>` +
+    ms.items.map(x => `<li>${x}</li>`).join("") + "</ul>";
+}
+
+function renderScore() {
+  const g = $("#scoreGrid"); g.innerHTML = "";
+  SCORE.forEach(f => {
+    const c = el("div", "score-field");
+    c.style.borderLeft = "4px solid " + f.color;
+    c.innerHTML = `<h4><span class="swatch" style="background:${f.color}"></span>${f.name}</h4><dl>` +
+      f.rows.map(([k, v]) => `<div class="kv"><dt>${k}</dt><dd>${v}</dd></div>`).join("") + "</dl>";
+    g.appendChild(c);
+  });
+}
+
+/* ============================================================
+   Start
+   ============================================================ */
+function renderMarketViews() { renderV1(); }
+
+renderV1();
+renderCampaignPills();
+renderV2();
+renderSliders();
+updateReadouts();
+renderTests();
+renderTimeline();
+renderMilestone();
+renderScore();
+/* Nur bei Breitenänderung neu zeichnen: Höhen-Resizes (mobile Browserleiste)
+   sollen die Einstiegsanimationen nicht neu starten. */
+let lastW = innerWidth, resizeT;
+addEventListener("resize", () => {
+  if (Math.abs(innerWidth - lastW) < 4) return;
+  lastW = innerWidth;
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { renderV1(); renderV2(); drawCurve(false); }, 120);
+});
+</script>
+</body>
+</html>
